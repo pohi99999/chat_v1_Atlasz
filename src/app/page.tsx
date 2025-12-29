@@ -39,7 +39,7 @@ export default function Home() {
 
       <CopilotSidebar
         labels={{
-          initial: "Szia! Miben segíthetek ma?",
+          initial: "Sziia! Miben segíthetek ma?",
           title: "Atlas AI Asszisztens",
           placeholder: "Írj egy üzenetet...",
           error: "Hiba történt. Kérlek próbáld újra.",
