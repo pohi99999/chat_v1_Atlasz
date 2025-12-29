@@ -1,0 +1,38 @@
+[debug] [2025-12-29T08:10:38.445Z] [Firebase Plugin] Activating Firebase extension.
+[debug] [2025-12-29T08:10:58.763Z] [Firebase Plugin] requireAuthWrapper
+[debug] [2025-12-29T08:10:58.785Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-12-29T08:10:58.786Z] > authorizing via signed-in user (peterpohankapersonal@gmail.com)
+[debug] [2025-12-29T08:10:58.792Z] Checked if tokens are valid: true, expires at: 1766999166323
+[debug] [2025-12-29T08:10:58.794Z] Checked if tokens are valid: true, expires at: 1766999166323
+[debug] [2025-12-29T08:10:58.794Z] [Firebase Plugin] User found:  peterpohankapersonal@gmail.com
+[info] [Firebase Plugin] (Core:Project) New user detected, fetching projects
+[debug] [2025-12-29T08:10:58.799Z] Checked if tokens are valid: true, expires at: 1766999166323
+[debug] [2025-12-29T08:10:58.801Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects pageSize=1000
+[debug] [2025-12-29T08:10:58.818Z] [Firebase Plugin] VSCode notification server listening on port 40001
+[info] [Firebase Plugin] Starting Data Connect toolkit (version 3.0.0) on port 50001
+[debug] [2025-12-29T08:11:02.733Z] I1229 09:11:02.668710   24444 control.go:94] [/emulator/chatv1 1143] UpdateResources(): done
+Main schema: sources: schema\schema.gql [798B] 
+Connector "example": sources: example\queries.gql [947B] 
+ {"metadata":{"emulator":{"name":"dataconnect"},"message":"I1229 09:11:02.668710   24444 control.go:94] [/emulator/chatv1 1143] UpdateResources(): done\nMain schema: sources: schema\\schema.gql [798B] \nConnector \"example\": sources: example\\queries.gql [947B] \n"}}
+[debug] [2025-12-29T08:11:02.735Z] Ignoring unsupported arg: auto_download {"metadata":{"emulator":{"name":"dataconnect"},"message":"Ignoring unsupported arg: auto_download"}}
+[debug] [2025-12-29T08:11:02.736Z] Ignoring unsupported arg: port {"metadata":{"emulator":{"name":"dataconnect"},"message":"Ignoring unsupported arg: port"}}
+[debug] [2025-12-29T08:11:02.737Z] Starting Data Connect Emulator with command {"binary":"C:\\Users\\iam_peterpohanka2\\.cache\\firebase\\emulators\\dataconnect-emulator-3.0.0.exe","args":["--logtostderr","-v=2","dev","--listen=localhost:50001","--config_dir=z:\\Workspace\\chat_v1_Atlasz\\dataconnect","--enable_output_schema_extensions=true","--enable_output_generated_sdk=true"],"optionalArgs":["listen","config_dir","enable_output_schema_extensions","enable_output_generated_sdk"],"joinArgs":true,"shell":false,"port":9399} {"metadata":{"emulator":{"name":"dataconnect"},"message":"Starting Data Connect Emulator with command {\"binary\":\"C:\\\\Users\\\\iam_peterpohanka2\\\\.cache\\\\firebase\\\\emulators\\\\dataconnect-emulator-3.0.0.exe\",\"args\":[\"--logtostderr\",\"-v=2\",\"dev\",\"--listen=localhost:50001\",\"--config_dir=z:\\\\Workspace\\\\chat_v1_Atlasz\\\\dataconnect\",\"--enable_output_schema_extensions=true\",\"--enable_output_generated_sdk=true\"],\"optionalArgs\":[\"listen\",\"config_dir\",\"enable_output_schema_extensions\",\"enable_output_generated_sdk\"],\"joinArgs\":true,\"shell\":false,\"port\":9399}"}}
+[info] i  dataconnect: Data Connect Emulator logging to dataconnect-debug.log {"metadata":{"emulator":{"name":"dataconnect"},"message":"Data Connect Emulator logging to \u001b[1mdataconnect-debug.log\u001b[22m"}}
+[debug] [2025-12-29T08:11:03.321Z] I1229 09:11:02.882776   54460 load.go:31] Reloading schema and connectors...
+I1229 09:11:03.052770   54460 control.go:94] [/emulator/chatv1 99f2] UpdateResources(): done
+Main schema: sources: schema\schema.gql [798B] 
+Connector "example": sources: example\queries.gql [947B] 
+I1229 09:11:03.147243   54460 codegen.go:80] [connector "example" javascriptSdk] Generating sources into "z:\\Workspace\\chat_v1_Atlasz\\src\\dataconnect-generated"
+E1229 09:11:03.171734   54460 load.go:42] Errors flushing generated files: schema extensions failed to traverse the output directory: unexpected file "desktop.ini".
+Output Directory: z:\Workspace\chat_v1_Atlasz\dataconnect\.dataconnect\schema
+Expect the output directory to contain only files with suffixes: .gql
+Please double check the output directory specified in connector.yaml!
+connector "example" javascriptSdk failed to traverse the output directory: unexpected file "desktop.ini".
+Output Directory: z:\Workspace\chat_v1_Atlasz\src\dataconnect-generated
+Expect the output directory to contain only files with suffixes: .json .ts .md .js
+Please double check the output directory specified in connector.yaml!
+I1229 09:11:03.171734   54460 load.go:109] Finished reloading
+I1229 09:11:03.203674   54460 dev.go:104] Listening on address (HTTP + gRPC): 127.0.0.1:50001
+ {"metadata":{"emulator":{"name":"dataconnect"},"message":"I1229 09:11:02.882776   54460 load.go:31] Reloading schema and connectors...\nI1229 09:11:03.052770   54460 control.go:94] [/emulator/chatv1 99f2] UpdateResources(): done\nMain schema: sources: schema\\schema.gql [798B] \nConnector \"example\": sources: example\\queries.gql [947B] \nI1229 09:11:03.147243   54460 codegen.go:80] [connector \"example\" javascriptSdk] Generating sources into \"z:\\\\Workspace\\\\chat_v1_Atlasz\\\\src\\\\dataconnect-generated\"\nE1229 09:11:03.171734   54460 load.go:42] Errors flushing generated files: schema extensions failed to traverse the output directory: unexpected file \"desktop.ini\".\nOutput Directory: z:\\Workspace\\chat_v1_Atlasz\\dataconnect\\.dataconnect\\schema\nExpect the output directory to contain only files with suffixes: .gql\nPlease double check the output directory specified in connector.yaml!\nconnector \"example\" javascriptSdk failed to traverse the output directory: unexpected file \"desktop.ini\".\nOutput Directory: z:\\Workspace\\chat_v1_Atlasz\\src\\dataconnect-generated\nExpect the output directory to contain only files with suffixes: .json .ts .md .js\nPlease double check the output directory specified in connector.yaml!\nI1229 09:11:03.171734   54460 load.go:109] Finished reloading\nI1229 09:11:03.203674   54460 dev.go:104] Listening on address (HTTP + gRPC): 127.0.0.1:50001\n"}}
+[debug] [2025-12-29T08:11:05.080Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects 200
+[debug] [2025-12-29T08:11:05.082Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects [omitted]

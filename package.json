@@ -14,9 +14,9 @@
     "postinstall": "npm run install:agent"
   },
   "dependencies": {
-    "@copilotkit/backend": "^1.3.15",
-    "@copilotkit/react-core": "^1.3.15",
-    "@copilotkit/react-ui": "^1.3.15",
+    "@copilotkit/backend": "0.37.0",
+    "@copilotkit/react-core": "1.10.6",
+    "@copilotkit/react-ui": "1.10.6",
     "@langchain/core": "^0.3.0",
     "@langchain/langgraph": "^0.2.0",
     "@langchain/openai": "^0.3.0",
