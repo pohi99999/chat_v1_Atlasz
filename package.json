@@ -14,9 +14,9 @@
     "postinstall": "node ./scripts/postinstall.js"
   },
   "dependencies": {
-    "@copilotkit/backend": "0.37.0",
-    "@copilotkit/react-core": "1.10.6",
-    "@copilotkit/react-ui": "1.10.6",
+    "@copilotkit/backend": "^0.37.0",
+    "@copilotkit/react-core": "^1.50.1",
+    "@copilotkit/react-ui": "^1.50.1",
     "@langchain/core": "^0.3.0",
     "@langchain/langgraph": "^0.2.0",
     "@langchain/openai": "^0.3.0",

@@ -124,7 +124,7 @@ export const POST = async (req: NextRequest) => {
 
   const serviceAdapter = new LangChainAdapter(async ({ messages, tools }) => {
     const systemMessage = new SystemMessage(SYSTEM_PROMPT);
-    const history = [systemMessage, ...messages];
+    const history = [systemMessage, ...(messages || [])];
 
     const hasIterableTools = Array.isArray(tools);
     if (!hasIterableTools && tools != null) {
