@@ -3,6 +3,11 @@ import { CopilotRuntime, LangChainAdapter } from "@copilotkit/backend";
 import { ChatOpenAI } from "@langchain/openai";
 import { SystemMessage } from "@langchain/core/messages";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+// Allow longer streaming responses on Vercel Serverless.
+export const maxDuration = 60;
+
 // --- SYSTEM PROMPT DEFINITION ---
 const SYSTEM_PROMPT = `
 Nyelv: Magyar, közvetlen tegező, tisztelettudó, baráti ("a haverod a gépben"). Kerüld a túlbonyolított szakzsargont. Válaszolj 2-5 mondatos blokkokban, kérdezz vissza célzottan.
@@ -68,19 +73,84 @@ Zárás (a 3. fázis végén):
 `;
 
 export const POST = async (req: NextRequest) => {
+  const openAIApiKey = process.env.OPENAI_API_KEY;
+  if (!openAIApiKey) {
+    console.error(
+      "Missing OPENAI_API_KEY. Set it in your environment (Vercel Project Settings → Environment Variables).",
+    );
+    return new Response(
+      JSON.stringify({
+        error: "Server misconfiguration: OPENAI_API_KEY is missing.",
+      }),
+      {
+        status: 500,
+        headers: { "content-type": "application/json" },
+      },
+    );
+  }
+
   const model = new ChatOpenAI({
-    model: "gpt-4o",
+    apiKey: openAIApiKey,
+    model: process.env.OPENAI_MODEL ?? "gpt-4o",
     temperature: 0.7,
   });
 
+  // CopilotKit runtime currently assumes `forwardedProps.tools` is iterable.
+  // On some deployments it can arrive as a non-array object, which breaks with
+  // "TypeError: e is not iterable" when CopilotKit tries to spread it.
+  // Normalize the request body before handing it to CopilotRuntime.
+  let forwardedProps: any;
+  try {
+    forwardedProps = await req.json();
+  } catch (err) {
+    console.error("Invalid JSON body for /api/copilotkit", err);
+    return new Response(JSON.stringify({ error: "Invalid JSON body." }), {
+      status: 400,
+      headers: { "content-type": "application/json" },
+    });
+  }
+  if (forwardedProps && "tools" in forwardedProps && !Array.isArray(forwardedProps.tools)) {
+    console.warn("Normalizing non-array forwardedProps.tools", {
+      toolsType: typeof forwardedProps.tools,
+    });
+    delete forwardedProps.tools;
+  }
+
+  const normalizedRequest = new Request(req.url, {
+    method: "POST",
+    headers: new Headers(req.headers),
+    body: JSON.stringify(forwardedProps ?? {}),
+  });
+
   const serviceAdapter = new LangChainAdapter(async ({ messages, tools }) => {
-    // Mindig fűzzük be a Rendszerutasítást az üzenetek elejére
     const systemMessage = new SystemMessage(SYSTEM_PROMPT);
     const history = [systemMessage, ...messages];
 
-    // A stream-elés biztosítja a folyamatos válaszadást
-    return (await model.stream(history, { tools })) as any; // Cast because LangChain stream type differs from adapter expectation
+    const hasIterableTools = Array.isArray(tools);
+    if (!hasIterableTools && tools != null) {
+      console.warn(
+        "CopilotKit provided non-array tools; omitting tools for LangChain call.",
+        { toolsType: typeof tools },
+      );
+    }
+
+    try {
+      const streamOptions = hasIterableTools ? { tools } : undefined;
+      return (await model.stream(history, streamOptions as any)) as any; // Cast because LangChain stream type differs from adapter expectation
+    } catch (err) {
+      console.error("ChatOpenAI streaming failed", err);
+      throw err;
+    }
   });
-  const copilotKit = new CopilotRuntime();
-  return copilotKit.response(req, serviceAdapter);
+
+  try {
+    const copilotKit = new CopilotRuntime();
+    return copilotKit.response(normalizedRequest as any, serviceAdapter);
+  } catch (err) {
+    console.error("CopilotKit runtime failed", err);
+    return new Response(JSON.stringify({ error: "CopilotKit route failed." }), {
+      status: 500,
+      headers: { "content-type": "application/json" },
+    });
+  }
 };

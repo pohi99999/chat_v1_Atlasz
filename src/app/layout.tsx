@@ -13,10 +13,14 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const showDevConsole =
+    process.env.NEXT_PUBLIC_COPILOTKIT_DEV_CONSOLE === "true" ||
+    process.env.NODE_ENV !== "production";
+
   return (
     <html lang="hu">
       <body className="antialiased font-sans">
-        <CopilotKit runtimeUrl="/api/copilotkit" showDevConsole={false}>
+        <CopilotKit runtimeUrl="/api/copilotkit" showDevConsole={showDevConsole}>
           {children}
         </CopilotKit>
       </body>

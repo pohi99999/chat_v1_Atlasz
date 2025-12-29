@@ -113,6 +113,21 @@ This project is licensed under the MIT License – see the LICENSE file for deta
 
 ## Troubleshooting
 
+### Vercel: a chatbot "nem reagál"
+
+Ez a repo jelenlegi beállításban a Next.js route handleren keresztül hívja a modellt: [src/app/api/copilotkit/route.ts](src/app/api/copilotkit/route.ts). Vercelen ez csak akkor fog válaszolni, ha a szükséges env varok be vannak állítva.
+
+**Kötelező (Vercel Project → Settings → Environment Variables):**
+
+- `OPENAI_API_KEY` – az OpenAI API kulcs
+
+**Opcionális:**
+
+- `OPENAI_MODEL` – alapértelmezés: `gpt-4o`
+- `NEXT_PUBLIC_COPILOTKIT_DEV_CONSOLE=true` – hibák megjelenítése a CopilotKit dev console-ban (debughoz)
+
+Ha ezek hiányoznak, az `/api/copilotkit` 500-as hibát fog dobni, és a UI csak annyit mutat, hogy hiba történt.
+
 ### Agent Connection Issues
 
 If you see "I'm having trouble connecting to my tools", make sure:
