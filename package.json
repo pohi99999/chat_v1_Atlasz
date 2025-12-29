@@ -10,8 +10,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "install:agent": "./scripts/setup-agent.sh || scripts\\setup-agent.bat",
-    "postinstall": "npm run install:agent"
+    "install:agent": "node ./scripts/postinstall.js",
+    "postinstall": "node ./scripts/postinstall.js"
   },
   "dependencies": {
     "@copilotkit/backend": "0.37.0",
