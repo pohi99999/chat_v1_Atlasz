@@ -1,9 +1,5 @@
 import { NextRequest } from "next/server";
-import {
-  CopilotRuntime,
-  copilotRuntimeNextJSAppRouterEndpoint,
-  LangChainAdapter,
-} from "@copilotkit/backend";
+import { CopilotRuntime, LangChainAdapter } from "@copilotkit/backend";
 import { ChatOpenAI } from "@langchain/openai";
 import { SystemMessage } from "@langchain/core/messages";
 
@@ -77,22 +73,14 @@ export const POST = async (req: NextRequest) => {
     temperature: 0.7,
   });
 
-  const serviceAdapter = new LangChainAdapter({
-    chainFn: async ({ messages, tools }) => {
-      // Mindig fűzzük be a Rendszerutasítást az üzenetek elejére
-      const systemMessage = new SystemMessage(SYSTEM_PROMPT);
-      const history = [systemMessage, ...messages];
-      
-      // A stream-elés biztosítja a folyamatos válaszadást
-      return model.stream(history, { tools });
-    },
-  });
+  const serviceAdapter = new LangChainAdapter(async ({ messages, tools }) => {
+    // Mindig fűzzük be a Rendszerutasítást az üzenetek elejére
+    const systemMessage = new SystemMessage(SYSTEM_PROMPT);
+    const history = [systemMessage, ...messages];
 
-  const { handleRequest } = copilotRuntimeNextJSAppRouterEndpoint({
-    runtime: new CopilotRuntime(),
-    serviceAdapter,
-    endpoint: "/api/copilotkit",
+    // A stream-elés biztosítja a folyamatos válaszadást
+    return (await model.stream(history, { tools })) as any; // Cast because LangChain stream type differs from adapter expectation
   });
-
-  return handleRequest(req);
+  const copilotKit = new CopilotRuntime();
+  return copilotKit.response(req, serviceAdapter);
 };
