@@ -80,7 +80,8 @@ export const POST = async (req: NextRequest) => {
     );
     return new Response(
       JSON.stringify({
-        error: "Server misconfiguration: OPENAI_API_KEY is missing.",
+        error:
+          "The OPENAI_API_KEY environment variable is not set. Please set it in your Vercel project settings.",
       }),
       {
         status: 500,
