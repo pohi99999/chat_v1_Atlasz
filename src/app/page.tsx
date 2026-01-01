@@ -44,8 +44,7 @@ export default function Home() {
           placeholder: "Írj egy üzenetet...",
           error: "Hiba történt. Kérlek próbáld újra.",
         }}
-        defaultOpen={true}
-        clickOutsideToClose={false}
+      defaultOpen={false}        clickOutsideToClose={false}
       />
     </div>
   );
