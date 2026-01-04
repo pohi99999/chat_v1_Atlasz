@@ -113,20 +113,31 @@ This project is licensed under the MIT License – see the LICENSE file for deta
 
 ## Troubleshooting
 
-### Vercel: a chatbot "nem reagál"
+### React 19 Compatibility
 
-Ez a repo jelenlegi beállításban a Next.js route handleren keresztül hívja a modellt: [src/app/api/copilotkit/route.ts](src/app/api/copilotkit/route.ts). Vercelen ez csak akkor fog válaszolni, ha a szükséges env varok be vannak állítva.
+This project has been updated to use React 19. If you encounter issues:
 
-**Kötelező (Vercel Project → Settings → Environment Variables):**
+```bash
+rm -rf node_modules package-lock.json
+npm install
+```
 
-- `OPENAI_API_KEY` – az OpenAI API kulcs
+### Vercel Deployment: Chatbot Not Responding
 
-**Opcionális:**
+This repository uses a Next.js API route to call the model: [src/app/api/copilotkit/route.ts](src/app/api/copilotkit/route.ts). 
 
-- `OPENAI_MODEL` – alapértelmezés: `gpt-4o`
-- `NEXT_PUBLIC_COPILOTKIT_DEV_CONSOLE=true` – hibák megjelenítése a CopilotKit dev console-ban (debughoz)
+**Required Environment Variables (Vercel Project → Settings → Environment Variables):**
 
-Ha ezek hiányoznak, az `/api/copilotkit` 500-as hibát fog dobni, és a UI csak annyit mutat, hogy hiba történt.
+- `OPENAI_API_KEY` – Your OpenAI API key
+
+**Optional:**
+
+- `OPENAI_MODEL` – Default: `gpt-4o`
+- `NEXT_PUBLIC_COPILOTKIT_DEV_CONSOLE=true` – Show errors in CopilotKit dev console (for debugging)
+
+If these are missing, the `/api/copilotkit` endpoint will return a 500 error.
+
+**Important:** The Python agent will NOT work on Vercel serverless. Only the Next.js chatbot will function in production.
 
 ### Agent Connection Issues
 

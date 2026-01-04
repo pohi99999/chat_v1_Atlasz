@@ -96,62 +96,36 @@ export const POST = async (req: NextRequest) => {
     temperature: 0.7,
   });
 
-  // CopilotKit runtime currently assumes `forwardedProps.tools` is iterable.
-  // On some deployments it can arrive as a non-array object, which breaks with
-  // "TypeError: e is not iterable" when CopilotKit tries to spread it.
-  // Normalize the request body before handing it to CopilotRuntime.
-  let forwardedProps: any;
   try {
-    forwardedProps = await req.json();
-  } catch (err) {
-    console.error("Invalid JSON body for /api/copilotkit", err);
-    return new Response(JSON.stringify({ error: "Invalid JSON body." }), {
-      status: 400,
-      headers: { "content-type": "application/json" },
+    const serviceAdapter = new LangChainAdapter(async ({ messages, tools }: any) => {
+      const systemMessage = new SystemMessage(SYSTEM_PROMPT);
+      const history = [systemMessage, ...(messages || [])];
+
+      // Type-safe tools handling
+      const safeTools = Array.isArray(tools) && tools.length > 0 ? tools : undefined;
+
+      try {
+        const stream = await model.stream(history, safeTools ? { tools: safeTools } : undefined);
+        return stream as any;
+      } catch (err) {
+        console.error("ChatOpenAI streaming failed", err);
+        throw err;
+      }
     });
-  }
-  if (forwardedProps && "tools" in forwardedProps && !Array.isArray(forwardedProps.tools)) {
-    console.warn("Normalizing non-array forwardedProps.tools", {
-      toolsType: typeof forwardedProps.tools,
-    });
-    delete forwardedProps.tools;
-  }
 
-  const normalizedRequest = new Request(req.url, {
-    method: "POST",
-    headers: new Headers(req.headers),
-    body: JSON.stringify(forwardedProps ?? {}),
-  });
-
-  const serviceAdapter = new LangChainAdapter(async ({ messages, tools }) => {
-    const systemMessage = new SystemMessage(SYSTEM_PROMPT);
-    const history = [systemMessage, ...(messages || [])];
-
-    const hasIterableTools = Array.isArray(tools);
-    if (!hasIterableTools && tools != null) {
-      console.warn(
-        "CopilotKit provided non-array tools; omitting tools for LangChain call.",
-        { toolsType: typeof tools },
-      );
-    }
-
-    try {
-      const streamOptions = hasIterableTools ? { tools } : undefined;
-      return (await model.stream(history, streamOptions as any)) as any; // Cast because LangChain stream type differs from adapter expectation
-    } catch (err) {
-      console.error("ChatOpenAI streaming failed", err);
-      throw err;
-    }
-  });
-
-  try {
     const copilotKit = new CopilotRuntime();
-    return copilotKit.response(normalizedRequest as any, serviceAdapter);
+    return copilotKit.response(req, serviceAdapter);
   } catch (err) {
     console.error("CopilotKit runtime failed", err);
-    return new Response(JSON.stringify({ error: "CopilotKit route failed." }), {
-      status: 500,
-      headers: { "content-type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ 
+        error: "Internal server error",
+        message: err instanceof Error ? err.message : "Unknown error"
+      }), 
+      {
+        status: 500,
+        headers: { "content-type": "application/json" },
+      }
+    );
   }
 };
