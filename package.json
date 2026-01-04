@@ -1,0 +1,39 @@
+{
+  "name": "copilotkit-microsoft-agent-framework-starter",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "dev:debug": "LOG_LEVEL=debug npm run dev",
+    "dev:agent": "./scripts/run-agent.sh || scripts/run-agent.bat",
+    "dev:ui": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "install:agent": "node ./scripts/postinstall.js",
+    "postinstall": "node ./scripts/postinstall.js"
+  },
+  "dependencies": {
+    "@copilotkit/backend": "^0.37.0",
+    "@copilotkit/react-core": "^1.50.1",
+    "@copilotkit/react-ui": "^1.50.1",
+    "@langchain/core": "^0.3.0",
+    "@langchain/langgraph": "^0.2.0",
+    "@langchain/openai": "^0.3.0",
+    "next": "15.4.10",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^18.3.27",
+    "@types/react-dom": "^18.3.7",
+    "concurrently": "^9.1.2",
+    "eslint": "^9",
+    "eslint-config-next": "16.0.8",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
