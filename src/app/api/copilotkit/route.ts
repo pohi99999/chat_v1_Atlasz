@@ -1,3 +1,4 @@
+// Fresh deployment - Clean OpenAI SDK implementation
 import { NextRequest } from "next/server";
 import { OpenAIStream, StreamingTextResponse } from "ai";
 import OpenAI from "openai";
