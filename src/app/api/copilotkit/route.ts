@@ -128,4 +128,36 @@ export const POST = async (req: NextRequest) => {
       }
     );
   }
+
+   // Handle GET requests for /info endpoint
+export const GET = async (req: NextRequest) => {
+  try {
+    const serviceAdapter = new LangChainAdapter(async ({ messages, tools }: any) => {
+      const systemMessage = new SystemMessage(SYSTEM_PROMPT);
+      const history = [systemMessage, ...(messages || [])];
+      const safeTools = Array.isArray(tools) && tools.length > 0 ? tools : undefined;
+      const stream = await new ChatOpenAI({
+        apiKey: process.env.OPENAI_API_KEY,
+        model: process.env.OPENAI_MODEL ?? "gpt-4o",
+        temperature: 0.7,
+      }).stream(history, safeTools ? { tools: safeTools } : undefined);
+      return stream as any;
+    });
+
+    const copilotKit = new CopilotRuntime();
+    return copilotKit.response(req, serviceAdapter);
+  } catch (err) {
+    console.error("CopilotKit GET failed", err);
+    return new Response(
+      JSON.stringify({ 
+        error: "Internal server error",
+        message: err instanceof Error ? err.message : "Unknown error"
+      }), 
+      {
+        status: 500,
+        headers: { "content-type": "application/json" },
+      }
+    );
+  }
+};
 };
