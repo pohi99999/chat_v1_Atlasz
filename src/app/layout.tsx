@@ -20,7 +20,7 @@ export default function RootLayout({
   return (
     <html lang="hu">
       <body className="antialiased font-sans">
-        <CopilotKit runtimeUrl="/api/copilotkit" agent="default" showDevConsole={showDevConsole}>
+        <CopilotKit runtimeUrl="/api/copilotkit" showDevConsole={showDevConsole}>
           {children}
         </CopilotKit>
       </body>
