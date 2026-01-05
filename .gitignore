@@ -55,3 +55,8 @@ venv
 .venv
 __pycache__
 .vercel
+
+# windows
+desktop.ini
+*.log
+.firebase/logs/
