@@ -98,9 +98,9 @@ export const POST = async (req: NextRequest) => {
   });
 
   try {
-    const runtime = new CopilotRuntime();
+    const copilotRuntime = new CopilotRuntime();
     
-    return runtime.response(
+    return copilotRuntime.response(
       req,
       new LangChainAdapter(async ({ messages, tools }) => {
         const systemMessage = new SystemMessage(SYSTEM_PROMPT);
