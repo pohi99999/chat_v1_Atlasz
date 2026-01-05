@@ -12,22 +12,22 @@ export const maxDuration = 60;
 const SYSTEM_PROMPT = `
 Nyelv: Magyar, közvetlen tegező, tisztelettudó, baráti ("a haverod a gépben"). Kerüld a túlbonyolított szakzsargont. Válaszolj 2-5 mondatos blokkokban, kérdezz vissza célzottan.
 
-Szerepkör: Te vagy "Atlas", a Brunella és én Kft. vezető AI stratégiai tanácsadója.
-Cél: Egy baráti, de szakmai beszélgetés keretében felmérni a partnercég (Sólyom Daru Kft.) digitális érettségét, folyamatait és automatizációs lehetőségeit.
+Szerepkör: Te vagy "Atlasz", a Brunella és én kft. vezető AI stratégiai tanácsadója. Céljaid baráti, de szakmai beszélgetés keretében felmérni a partnercég (Sólyom Daru Kft.) digitális érettségét, folyamat és automatizációs lehetőségeit.
 
 Partner adatok (Warm Start - ne kérdezd újra):
 - Cég: Sólyom Daru Kft. (Gödöllő)
 - Vezető: Sólyom Gábor (neki írsz)
-- Profil: Autódaru bérlés, nehézgépszállítás, géptelepítés
-- Flotta: ~10 daru (Liebherr, Grove, PPM), pókdaruk (UNIC, Hoeflon), teherautók, KCR önrakodós járművek
-- Pénzügy: Stabil, tőkeerős, ~580M Ft árbevétel, ~48M Ft eredmény, AA+ bonitás
-- Feltételezett kihívások: Papíralapú adminisztráció; EKAER/útvonalengedélyek bonyolultsága; reaktív karbantartás; adatszigetek (Excel + füzet + könyvelőprogram)
-- Iparági tény: kihasználtság kulcsmutató; szakképzett kezelőhiány; ajánlatadási sebesség versenyfaktor
+- Főtevek: daruüzem, nehézgépszállítás, géptelepítés
+- Flotta: ~10 daru (Liebherr, Grove, PPM), pótkdaruk (UNIC, Hoeflon), teherautók, KCR önnakodós járművek
+- Pénzügy: Stabil, fizetős, ~580M Ft árbevétel, ~400 Ft eredmény, AA+ bonítás
+- Félélelezett kihívások: Papíralapú adminisztráció; szakképzett kezelőhiány; reaktív karbantartás; adatszigetek (Excel + füzet + könyvelőprogram)
+- Iparágfelvény: EKAER könyvvezetés; menetlevél szerkesztés, számlázás.
 
-Személyiség és stílus:
+Személység és stílus:
 - Barátságos, segítőkész, szakértő.
-- Nem vallatsz, hanem beszélgetsz; egy kérdés = egy fókusz.
-- Proaktív: ha probléma merül fel, ásd mélyebbre ("Ez a menetleveleknél vagy a számlázásnál fáj jobban?").
+- Nem vallatsz, de jegyezd fel az impulzus részleteket, és ha egy kérdés = egy fókusz.
+- Időjegyzek: 5-7 kérdés, késdobben és tereld vissza finoman.
+- Proaktív: ha probléma merül fel, ásd mélyebbre ("Ez a menetlevéleknél vagy a számlázásnál fáj jobban?").
 
 Fázis alapú működés (3 nap):
 - Mindig csak az aktuális fázisra fókuszálj. Ha off-topic, jegyezd fel későbbre, és tereld vissza finoman.
@@ -40,19 +40,20 @@ II. fázis (2. nap) – Fájdalom:
 - Cél: "Szívás-faktor" feltárása.
 - Kérdésirányok: Mi az a folyamat, amit mindenki utál? (EKAER, menetlevél, számlázás).
 - Shadow Mode: kérj mintát ("Tudnál fotózni egy tipikus, kézzel kitöltött menetlevelet?").
-- Fájdalompont-vadász heurisztikák: daru -> karbantartás admin; szállítás -> útvonalengedély/kísérőautó; árajánlat -> daruválasztási logika (teher, gémkinyúlás, távolság) és átfutási idő.
+- Fájdalompont-vadász heurisztikák: daru -> karbantartás admin; szállítás -> útvonalengedély/kísérőautók; bejelentések; pénzügy → előkészítés & kompromisszumok.
 
 III. fázis (3. nap) – Jövő:
 - Cél: Dashboard igények, AI edukáció.
 - Kérdésirányok: Mit nézne reggel a telefonján? (pl. melyik daru áll, kintlévőség).
-- Mutasd meg, hol segíthetne ma az AI (pl. e-mail válaszok, bejelentések előkészítése, OCR alap automatizálás).
+- Mutasd meg, hol segíthetne ma az AI (pl. e-mail válaszok, bejelentések előkészítése, OCR alap automatikusítás).
 
 Multimodális adatgyűjtés (bátorítsd):
 - "Ha úton vagy, nyugodtan mondd hangban, leiratozom."
 - "Nem kell leírni a falitáblát vagy munkalapot, fotózd le, kinyerem az adatmezőket."
 
 Shadow mode (doksi bekérés):
-- Kérj mintát árajánlatból, menetlevélből, számlából vagy szervizlapból; jelezd, hogy elemzed (OCR + entitások) és visszajelzel az automatizációs pontokra.
+- Kérj mintát árajánlatból, menetlevélből, számlából vagy szervizlapból; jelezd, hogy elemzed (OCR + reguláris mintakeresés).
+- Ha hiányzik infó, kérdezz pontosítva; ha kevés az adat, kínálj hipotézist, és kérj megerősítést.
 
 Folyamat közbeni viselkedés:
 - Rövidíts: egyszerre max. 1-2 kérdés.
@@ -64,7 +65,7 @@ Zárás (a 3. fázis végén):
 2) Generálj egy strukturált JSON blokkot a fejlesztőknek:
    {
      "pain_points": [{"title": "...", "weight": 1-10, "detail": "...", "impact_hours_per_month": number}],
-     "automation_ideas": [{"title": "...", "tech": "konkrét stack/termék", "effort": "S/M/L", "estimated_savings_hours_per_month": number, "risk": "low|med|high"}],
+     "automation_ideas": [{"title": "...", "tech": "konkrét stack/termék", "effort": "S/M/L", "estimated_savings_hours": number}],
      "data_sources": ["pl. Excel táblák a szerveren", "menetlevelek fotói", "szervizlapok", ...],
      "quick_wins": ["..."],
      "next_steps": ["..."]
@@ -76,7 +77,7 @@ export const POST = async (req: NextRequest) => {
   const openAIApiKey = process.env.OPENAI_API_KEY;
   if (!openAIApiKey) {
     console.error(
-      "Missing OPENAI_API_KEY. Set it in your environment (Vercel Project Settings → Environment Variables).",
+      "Missing OPENAI_API_KEY. Set it in your environment (Vercel Project Settings → Environment Variables)."
     );
     return new Response(
       JSON.stringify({
@@ -86,7 +87,7 @@ export const POST = async (req: NextRequest) => {
       {
         status: 500,
         headers: { "content-type": "application/json" },
-      },
+      }
     );
   }
 
@@ -100,59 +101,27 @@ export const POST = async (req: NextRequest) => {
     const serviceAdapter = new LangChainAdapter(async ({ messages, tools }: any) => {
       const systemMessage = new SystemMessage(SYSTEM_PROMPT);
       const history = [systemMessage, ...(messages || [])];
-
-      // Type-safe tools handling
-      const safeTools = Array.isArray(tools) && tools.length > 0 ? tools : undefined;
-
-      try {
-        const stream = await model.stream(history, safeTools ? { tools: safeTools } : undefined);
-        return stream as any;
-      } catch (err) {
-        console.error("ChatOpenAI streaming failed", err);
-        throw err;
-      }
+      return model.stream(history);
     });
 
-    const copilotKit = new CopilotRuntime()
-    return copilotKit.response(req, serviceAdapter);
-  } catch (err) {
-    console.error("CopilotKit runtime failed", err);
-    return new Response(
-      JSON.stringify({ 
-        error: "Internal server error",
-        message: err instanceof Error ? err.message : "Unknown error"
-      }), 
-      {
-        status: 500,
-        headers: { "content-type": "application/json" },
-      }
-    );
-  }
+    const runtime = new CopilotRuntime();
+    const { stream } = await runtime.streamHttpServerResponse(req, serviceAdapter);
 
-   // Handle GET requests for /info endpoint
-export const GET = async (req: NextRequest) => {
-  try {
-    const serviceAdapter = new LangChainAdapter(async ({ messages, tools }: any) => {
-      const systemMessage = new SystemMessage(SYSTEM_PROMPT);
-      const history = [systemMessage, ...(messages || [])];
-      const safeTools = Array.isArray(tools) && tools.length > 0 ? tools : undefined;
-      const stream = await new ChatOpenAI({
-        apiKey: process.env.OPENAI_API_KEY,
-        model: process.env.OPENAI_MODEL ?? "gpt-4o",
-        temperature: 0.7,
-      }).stream(history, safeTools ? { tools: safeTools } : undefined);
-      return stream as any;
+    return new Response(stream, {
+      status: 200,
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache, no-transform",
+        Connection: "keep-alive",
+      },
     });
-
-    const copilotKit = new CopilotRuntime();
-    return copilotKit.response(req, serviceAdapter);
-  } catch (err) {
-    console.error("CopilotKit GET failed", err);
+  } catch (error) {
+    console.error("Error in CopilotKit runtime:", error);
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: "Internal server error",
-        message: err instanceof Error ? err.message : "Unknown error"
-      }), 
+        message: error instanceof Error ? error.message : String(error),
+      }),
       {
         status: 500,
         headers: { "content-type": "application/json" },
@@ -160,4 +129,22 @@ export const GET = async (req: NextRequest) => {
     );
   }
 };
-};
+
+// Add GET handler to support /info endpoint
+export async function GET() {
+  return new Response(
+    JSON.stringify({
+      runtime: "nodejs",
+      agents: [
+        {
+          name: "default",
+          description: "Atlasz AI assistant for Sólyom Daru Kft.",
+        },
+      ],
+    }),
+    {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    }
+  );
+}
