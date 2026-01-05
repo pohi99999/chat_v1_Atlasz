@@ -113,7 +113,14 @@ export const POST = async (req: NextRequest) => {
       }
     });
 
-    const copilotKit = new CopilotRuntime();
+    const copilotKit = new CopilotRuntime({
+      agents: [
+        {
+          name: "default",
+          description: "Atlas AI assistant for Sólyom Daru Kft.",
+        }
+      ]
+    });
     return copilotKit.response(req, serviceAdapter);
   } catch (err) {
     console.error("CopilotKit runtime failed", err);
