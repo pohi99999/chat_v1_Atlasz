@@ -1,5 +1,4 @@
 // Fresh deployment - Clean OpenAI SDK implementation
-import { NextRequest } from "next/server";
 import { OpenAIStream, StreamingTextResponse } from "ai";
 import OpenAI from "openai";
 
@@ -72,7 +71,7 @@ Zárás (a 3. fázis végén):
 3) Kérdezd meg, hogy küldheted-e e-mailben / letölthető formában a jegyzetet.
 `;
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
     const { messages } = await req.json();
 
