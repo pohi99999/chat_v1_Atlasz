@@ -1,6 +1,5 @@
 // Clean Next.js 15 API Route with OpenAI Streaming (Fixed)
-import OpenAI from "openai";
-import { OpenAIStream, StreamingTextResponse } from "ai";
+import OpenAIClient from "openai";import { OpenAIStream, StreamingTextResponse } from "ai";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -68,8 +67,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const openai = new OpenAI({ apiKey: openAIApiKey });
-
+    const openai = new OpenAIClient({ apiKey: openAIApiKey });
     const chatMessages = [
       { role: "system" as const, content: SYSTEM_PROMPT },
       ...messages,
