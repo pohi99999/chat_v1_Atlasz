@@ -1,8 +1,7 @@
-import OpenAI from "openai";
-import { OpenAIStream, StreamingTextResponse } from "ai";
+import { openai } from "@ai-sdk/openai";
+import { streamText } from "ai";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+export const runtime = "edge"; // Vagy "nodejs", ha szükséges, de az edge gyorsabb
 export const maxDuration = 60;
 
 // ATLASZ MESTER RENDSZERUTASÍTÁS (SYSTEM PROMPT)
@@ -69,31 +68,14 @@ Köszöntsd Sólyom Gábort úgy, mintha már ismernéd a cégét. Említsd meg,
 export async function POST(req: Request) {
   try {
     const { messages } = await req.json();
-    
-    const openAIApiKey = process.env.OPENAI_API_KEY;
-    if (!openAIApiKey) {
-      return new Response(
-        JSON.stringify({ error: "OPENAI_API_KEY is not configured" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
-    }
 
-    const openai = new OpenAI({ apiKey: openAIApiKey });
-    
-    const chatMessages = [
-      { role: "system" as const, content: SYSTEM_PROMPT },
-      ...messages,
-    ];
-
-    const response = await openai.chat.completions.create({
-      model: process.env.OPENAI_MODEL || "gpt-4o",
-      messages: chatMessages,
-      temperature: 0.7,
-      stream: true,
+    const result = streamText({
+      model: openai("gpt-4o"), // Az @ai-sdk/openai csomagot használjuk
+      system: SYSTEM_PROMPT,
+      messages,
     });
 
-    const stream = OpenAIStream(response);
-    return new StreamingTextResponse(stream);
+    return result.toDataStreamResponse();
 
   } catch (error) {
     console.error("Error in POST /api/copilotkit:", error);
@@ -106,7 +88,7 @@ export async function POST(req: Request) {
 
 export async function GET() {
   return new Response(
-    JSON.stringify({ message: "Atlasz API is running", version: "1.2 (Clean Prompt)" }),
+    JSON.stringify({ message: "Atlasz API is running", version: "2.0 (AI SDK 4.0)" }),
     { status: 200, headers: { "Content-Type": "application/json" } }
   );
 }
