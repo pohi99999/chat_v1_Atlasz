@@ -12,8 +12,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="hu">
-      <body className="antialiased font-sans">
+    // A suppressHydrationWarning segít elnyomni a bővítmények vagy apró eltérések miatti hibákat
+    <html lang="hu" suppressHydrationWarning>
+      <body className="antialiased font-sans" suppressHydrationWarning>
         {children}
       </body>
     </html>
