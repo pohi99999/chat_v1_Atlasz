@@ -1,163 +1,173 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
 
-interface Message {
-  role: "user" | "assistant";
-  content: string;
+import { useChat } from "ai/react";
+import { useState, useEffect, useRef } from "react";
+
+// Web Speech API típusdefiníciók (TypeScripthez)
+interface IWindow extends Window {
+  webkitSpeechRecognition: any;
+  SpeechRecognition: any;
 }
 
 export default function ChatInterface() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  // Vercel AI SDK useChat hook - ez kezeli a streamelést, state-et automatikusan
+  const { messages, input, handleInputChange, handleSubmit, isLoading, stop } = useChat({
+    api: "/api/copilotkit", // A javított route.ts végpontunk
+    initialMessages: [
+      {
+        id: "intro",
+        role: "assistant",
+        content: "Szia Gábor! Atlas vagyok. Mielőtt belevágnánk, hadd mondjam el, hogy átnéztem a Sólyom Daru profilját – lenyűgöző a flotta! Hogy indult a ma reggel, nagy a hajtás Gödöllőn?"
+      }
+    ],
+    onFinish: (message) => {
+      // Ha vége a válasznak, opcionálisan felolvashatjuk (ha a hang be van kapcsolva)
+      if (isSpeechEnabled) {
+        speak(message.content);
+      }
+    }
+  });
+
+  const [isSpeechEnabled, setIsSpeechEnabled] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
+  // Automatikus görgetés az aljára
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const sendMessage = async () => {
-    if (!input.trim() || isLoading) return;
+  // Szövegfelolvasás (Text-to-Speech)
+  const speak = (text: string) => {
+    if (!window.speechSynthesis) return;
+    // Megállítjuk az előző beszédet
+    window.speechSynthesis.cancel();
 
-    const userMessage: Message = { role: "user", content: input };
-    setMessages(prev => [...prev, userMessage]);
-    setInput("");
-    setIsLoading(true);
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "hu-HU"; // Magyar nyelv kényszerítése
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    
+    // Hang keresése (opcionális, de szebb ha van magyar hang)
+    const voices = window.speechSynthesis.getVoices();
+    const hungarianVoice = voices.find(v => v.lang.includes("hu"));
+    if (hungarianVoice) utterance.voice = hungarianVoice;
 
-    try {
-      const response = await fetch("/api/copilotkit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: [...messages, userMessage] }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to get response");
-      }
-
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let assistantMessage = "";
-
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value);
-          const lines = chunk.split("\n");
-
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              const data = line.slice(6);
-              if (data === "[DONE]") break;
-              
-              try {
-                const parsed = JSON.parse(data);
-                if (parsed.content) {
-                  assistantMessage += parsed.content;
-                  setMessages(prev => {
-                    const newMessages = [...prev];
-                    const lastMessage = newMessages[newMessages.length - 1];
-                    if (lastMessage && lastMessage.role === "assistant") {
-                      lastMessage.content = assistantMessage;
-                    } else {
-                      newMessages.push({ role: "assistant", content: assistantMessage });
-                    }
-                    return newMessages;
-                  });
-                }
-              } catch (e) {
-                // Ignore parse errors
-              }
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error("Error sending message:", error);
-      setMessages(prev => [
-        ...prev,
-        { role: "assistant", content: "Sajnálom, hiba történt. Kérlek próbáld újra." },
-      ]);
-    } finally {
-      setIsLoading(false);
-    }
+    window.speechSynthesis.speak(utterance);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
+  // Beszédfelismerés (Speech-to-Text)
+  const startListening = () => {
+    const { webkitSpeechRecognition, SpeechRecognition } = window as unknown as IWindow;
+    const Recognition = SpeechRecognition || webkitSpeechRecognition;
+
+    if (!Recognition) {
+      alert("A böngésződ nem támogatja a hangfelismerést (használj Chrome-ot).");
+      return;
     }
+
+    const recognition = new Recognition();
+    recognition.lang = "hu-HU";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      // Szimulálunk egy input change eseményt a useChat hook számára
+      const e = {
+        target: { value: transcript }
+      } as React.ChangeEvent<HTMLInputElement>;
+      handleInputChange(e);
+      
+      // Opcionálisan azonnal el is küldhetjük, vagy hagyjuk a felhasználót szerkeszteni
+      // Most csak beírjuk a mezőbe.
+    };
+
+    recognition.start();
   };
 
   return (
-    <div className="flex flex-col h-full bg-white">
-      {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4">
-        {messages.length === 0 && (
-          <div className="text-center text-slate-400 mt-12">
-            <p className="text-lg">Készülök segíteni!</p>
-            <p className="text-sm mt-2">Írj egy üzenet a kezdéshez.</p>
-          </div>
-        )}
-        {messages.map((message, index) => (
+    <div className="flex flex-col h-full bg-slate-50">
+      {/* Üzenetek listája */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.map((m) => (
           <div
-            key={index}
-            className={`flex ${
-              message.role === "user" ? "justify-end" : "justify-start"
-            }`}
+            key={m.id}
+            className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
           >
             <div
-              className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                message.role === "user"
-                  ? "bg-blue-600 text-white"
-                  : "bg-slate-100 text-slate-900"
+              className={`max-w-[85%] md:max-w-[75%] rounded-2xl px-5 py-3 shadow-sm ${
+                m.role === "user"
+                  ? "bg-blue-600 text-white rounded-br-none"
+                  : "bg-white text-slate-800 border border-slate-100 rounded-bl-none"
               }`}
             >
-              <p className="whitespace-pre-wrap">{message.content}</p>
+              <div className="whitespace-pre-wrap leading-relaxed">{m.content}</div>
             </div>
           </div>
         ))}
         {isLoading && (
           <div className="flex justify-start">
-            <div className="bg-slate-100 text-slate-900 rounded-lg px-4 py-2">
-              <div className="flex space-x-2">
-                <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
-                <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
-                <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
-              </div>
+            <div className="bg-white border border-slate-100 rounded-2xl px-5 py-3 rounded-bl-none">
+              <span className="animate-pulse text-slate-400">Atlasz gondolkodik...</span>
             </div>
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area */}
-      <div className="border-t border-slate-200 p-4">
-        <div className="flex gap-2">
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Írj egy üzenetet..."
-            className="flex-1 border border-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-            rows={3}
-            disabled={isLoading}
-          />
-          <button
-            onClick={sendMessage}
-            disabled={isLoading || !input.trim()}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
-          >
-            Küldés
-          </button>
-        </div>
+      {/* Input sáv */}
+      <div className="bg-white border-t border-slate-200 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          
+          <div className="flex gap-2">
+            {/* Hang gombok */}
+            <button
+              type="button"
+              onClick={() => setIsSpeechEnabled(!isSpeechEnabled)}
+              className={`p-3 rounded-full transition-colors ${
+                isSpeechEnabled ? "bg-blue-100 text-blue-600" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+              }`}
+              title="Felolvasás be/ki"
+            >
+              {isSpeechEnabled ? "🔊" : "🔇"}
+            </button>
+
+            <input
+              className="flex-1 border border-slate-300 rounded-full px-5 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 placeholder:text-slate-400"
+              value={input}
+              placeholder="Írj üzenetet vagy használd a mikrofont..."
+              onChange={handleInputChange}
+            />
+
+            <button
+              type="button"
+              onClick={startListening}
+              className={`p-3 rounded-full transition-colors ${
+                isListening ? "bg-red-500 text-white animate-pulse" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+              title="Beszéd indítása"
+            >
+              🎤
+            </button>
+
+            <button
+              type="submit"
+              disabled={isLoading || !input.trim()}
+              className="px-6 py-3 bg-blue-600 text-white font-medium rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-transform active:scale-95"
+            >
+              Küldés
+            </button>
+          </div>
+          
+          {/* Mobil helper text */}
+          <div className="text-xs text-center text-slate-400">
+            Atlasz AI Asszisztens • Sólyom Daru Projekt
+          </div>
+        </form>
       </div>
     </div>
   );
