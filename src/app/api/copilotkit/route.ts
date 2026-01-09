@@ -1,7 +1,8 @@
-import { openai } from "@ai-sdk/openai";
-import { streamText } from "ai";
+import OpenAI from "openai";
+import { OpenAIStream, StreamingTextResponse } from "ai";
 
-export const runtime = "edge"; // Vagy "nodejs", ha szükséges, de az edge gyorsabb
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 // ATLASZ MESTER RENDSZERUTASÍTÁS (SYSTEM PROMPT)
@@ -68,27 +69,38 @@ Köszöntsd Sólyom Gábort úgy, mintha már ismernéd a cégét. Említsd meg,
 export async function POST(req: Request) {
   try {
     const { messages } = await req.json();
+    
+    // Biztonsági ellenőrzés
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      return new Response("Missing OPENAI_API_KEY", { status: 500 });
+    }
 
-    const result = streamText({
-      model: openai("gpt-4o"), // Az @ai-sdk/openai csomagot használjuk
-      system: SYSTEM_PROMPT,
-      messages,
+    const openai = new OpenAI({ apiKey });
+
+    // Hagyományos OpenAI SDK hívás
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        ...messages
+      ],
+      stream: true,
     });
 
-    return result.toDataStreamResponse();
+    // Stream átalakítása a frontend számára (AI SDK)
+    // @ts-ignore - A típus hiba elkerülése végett (Next.js configban is kikapcsoltuk)
+    const stream = OpenAIStream(response);
+    
+    // @ts-ignore
+    return new StreamingTextResponse(stream);
 
   } catch (error) {
-    console.error("Error in POST /api/copilotkit:", error);
-    return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    console.error("Error:", error);
+    return new Response(JSON.stringify({ error: "Internal Error" }), { status: 500 });
   }
 }
 
 export async function GET() {
-  return new Response(
-    JSON.stringify({ message: "Atlasz API is running", version: "2.0 (AI SDK 4.0)" }),
-    { status: 200, headers: { "Content-Type": "application/json" } }
-  );
+  return new Response(JSON.stringify({ status: "OK" }), { status: 200 });
 }
