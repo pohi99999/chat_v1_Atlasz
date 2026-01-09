@@ -1,11 +1,9 @@
 import OpenAI from "openai";
-import { OpenAIStream, StreamingTextResponse } from "ai";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 60; // Növeltük az időkorlátot, mert várni kell a válaszra
 
-// ATLASZ MESTER RENDSZERUTASÍTÁS (SYSTEM PROMPT)
 const SYSTEM_PROMPT = `
 ### SZEREPKÖR ÉS CÉL
 Te vagy "Atlas", a Brunella és én kft. vezető AI stratégiai tanácsadója és igényfelmérő ügynöke.
@@ -51,17 +49,6 @@ FÁZIS 3: A JÖVŐ ÉS AI VÍZIÓ
 - Kérdés: "Ha reggel a kávéd mellett ránéznél a telefonodra, mi az az 5 adat, amit látni akarsz a cégről?" (Pl. Kintlévőségek, Melyik daru áll, Ki hol dolgozik).
 - AI Edukáció: Villants fel lehetőségeket (pl. "Ezt a folyamatot egy AI ügynök 2 másodperc alatt megcsinálná helyetted").
 
-### KIMENETI UTASÍTÁS (A GENERÁLT ELEMZÉS)
-Ha a felhasználó jelzi, hogy vége a 3. napnak vagy kéri az összefoglalót, generálj egy strukturált JSON blokkot a fejlesztőknek az alábbi formátumban:
-
-{
-  "pain_points": [{"title": "...", "weight": 1-10, "detail": "...", "impact_hours_per_month": 0}],
-  "automation_ideas": [{"title": "...", "tech": "konkrét stack/termék", "effort": "S/M/L", "estimated_savings_hours": 0}],
-  "data_sources": ["pl. Excel táblák a szerveren", "menetlevelek fotói", "szervizlapok", ...],
-  "quick_wins": ["..."],
-  "next_steps": ["..."]
-}
-
 ### INDÍTÁS
 Köszöntsd Sólyom Gábort úgy, mintha már ismernéd a cégét. Említsd meg, hogy felkészültél a flottájából (Liebherr, stb.), és kérdezd meg, hogy van ma.
 `;
@@ -70,37 +57,41 @@ export async function POST(req: Request) {
   try {
     const { messages } = await req.json();
     
-    // Biztonsági ellenőrzés
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      return new Response("Missing OPENAI_API_KEY", { status: 500 });
+      console.error("HIBA: Nincs beállítva az OPENAI_API_KEY!");
+      return new Response(JSON.stringify({ error: "Configuration Error: Missing API Key" }), { status: 500 });
     }
 
     const openai = new OpenAI({ apiKey });
 
-    // Hagyományos OpenAI SDK hívás
+    // Stream kikapcsolva a stabilitás érdekében
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         ...messages
       ],
-      stream: true,
+      stream: false, // Fontos: Nem streamelünk!
     });
 
-    // Stream átalakítása a frontend számára (AI SDK)
-    // @ts-ignore - A típus hiba elkerülése végett (Next.js configban is kikapcsoltuk)
-    const stream = OpenAIStream(response);
+    const reply = response.choices[0].message.content;
     
-    // @ts-ignore
-    return new StreamingTextResponse(stream);
+    return new Response(JSON.stringify({ content: reply }), { 
+      status: 200, 
+      headers: { "Content-Type": "application/json" } 
+    });
 
-  } catch (error) {
-    console.error("Error:", error);
-    return new Response(JSON.stringify({ error: "Internal Error" }), { status: 500 });
+  } catch (error: any) {
+    console.error("API Hiba:", error);
+    // Visszaküldjük a hiba részleteit a frontendnek, hogy lássuk mi a baj
+    return new Response(JSON.stringify({ 
+      error: "OpenAI API Error", 
+      details: error.message 
+    }), { status: 500 });
   }
 }
 
 export async function GET() {
-  return new Response(JSON.stringify({ status: "OK" }), { status: 200 });
+  return new Response(JSON.stringify({ status: "OK", mode: "No-Stream" }), { status: 200 });
 }

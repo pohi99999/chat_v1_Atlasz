@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 
-// Web Speech API típusdefiníciók
 interface IWindow extends Window {
   webkitSpeechRecognition: any;
   SpeechRecognition: any;
@@ -71,37 +70,25 @@ export default function ChatInterface() {
         body: JSON.stringify({ messages: [...messages, userMessage] }),
       });
 
-      if (!response.ok) throw new Error("Hálózati hiba");
+      const data = await response.json();
 
-      // Stream olvasása manuálisan (a legbiztosabb módszer)
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let assistantMessage = "";
-
-      if (reader) {
-        setMessages(prev => [...prev, { role: "assistant", content: "" }]); // Üres üzenet placeholder
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          
-          const chunk = decoder.decode(value, { stream: true });
-          assistantMessage += chunk;
-
-          setMessages(prev => {
-            const newMsgs = [...prev];
-            newMsgs[newMsgs.length - 1].content = assistantMessage;
-            return newMsgs;
-          });
-        }
-        
-        // Ha kész, felolvassuk
-        speak(assistantMessage);
+      if (!response.ok) {
+        throw new Error(data.details || data.error || "Hálózati hiba");
       }
 
-    } catch (error) {
+      if (data.content) {
+        setMessages(prev => [...prev, { role: "assistant", content: data.content }]);
+        speak(data.content);
+      } else {
+        throw new Error("Üres választ kaptunk a szervertől.");
+      }
+
+    } catch (error: any) {
       console.error("Hiba:", error);
-      setMessages(prev => [...prev, { role: "assistant", content: "Sajnálom, hiba történt a kommunikációban." }]);
+      setMessages(prev => [
+        ...prev, 
+        { role: "assistant", content: `⚠️ Hiba történt: ${error.message}` }
+      ]);
     } finally {
       setIsLoading(false);
     }
@@ -115,11 +102,13 @@ export default function ChatInterface() {
             <div className={`max-w-[85%] md:max-w-[75%] rounded-2xl px-5 py-3 shadow-sm ${
               m.role === "user" ? "bg-blue-600 text-white rounded-br-none" : "bg-white text-slate-800 border border-slate-100 rounded-bl-none"
             }`}>
-              <div className="whitespace-pre-wrap leading-relaxed">{m.content}</div>
+              <div className="whitespace-pre-wrap leading-relaxed">
+                {m.content}
+              </div>
             </div>
           </div>
         ))}
-        {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
+        {isLoading && (
           <div className="flex justify-start">
             <div className="bg-white border border-slate-100 rounded-2xl px-5 py-3 rounded-bl-none">
               <span className="animate-pulse text-slate-400">Atlasz gondolkodik...</span>
