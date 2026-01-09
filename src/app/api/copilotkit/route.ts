@@ -6,7 +6,6 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 // ATLASZ MESTER RENDSZERUTASÍTÁS (SYSTEM PROMPT)
-// Tartalmazza: Persona, Cégadatok (Warm Start), 3 Napos Menetrend, Kimeneti formátum
 const SYSTEM_PROMPT = `
 ### SZEREPKÖR ÉS CÉL
 Te vagy "Atlas", a Brunella és én kft. vezető AI stratégiai tanácsadója és igényfelmérő ügynöke.
@@ -53,9 +52,8 @@ FÁZIS 3: A JÖVŐ ÉS AI VÍZIÓ
 - AI Edukáció: Villants fel lehetőségeket (pl. "Ezt a folyamatot egy AI ügynök 2 másodperc alatt megcsinálná helyetted").
 
 ### KIMENETI UTASÍTÁS (A GENERÁLT ELEMZÉS)
-Ha a felhasználó jelzi, hogy vége a 3. napnak vagy kéri az összefoglalót, generálj egy strukturált JSON blokkot a fejlesztőknek az alábbi formátumban, majd utána egy szöveges vezetői összefoglalót is:
+Ha a felhasználó jelzi, hogy vége a 3. napnak vagy kéri az összefoglalót, generálj egy strukturált JSON blokkot a fejlesztőknek az alábbi formátumban:
 
-```json
 {
   "pain_points": [{"title": "...", "weight": 1-10, "detail": "...", "impact_hours_per_month": 0}],
   "automation_ideas": [{"title": "...", "tech": "konkrét stack/termék", "effort": "S/M/L", "estimated_savings_hours": 0}],
@@ -63,7 +61,6 @@ Ha a felhasználó jelzi, hogy vége a 3. napnak vagy kéri az összefoglalót, 
   "quick_wins": ["..."],
   "next_steps": ["..."]
 }
-```
 
 ### INDÍTÁS
 Köszöntsd Sólyom Gábort úgy, mintha már ismernéd a cégét. Említsd meg, hogy felkészültél a flottájából (Liebherr, stb.), és kérdezd meg, hogy van ma.
@@ -109,7 +106,7 @@ export async function POST(req: Request) {
 
 export async function GET() {
   return new Response(
-    JSON.stringify({ message: "Atlasz API is running", version: "1.1 (Atlasz Persona Active)" }),
+    JSON.stringify({ message: "Atlasz API is running", version: "1.2 (Clean Prompt)" }),
     { status: 200, headers: { "Content-Type": "application/json" } }
   );
 }
