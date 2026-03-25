@@ -19,19 +19,48 @@ export default function ChatInterface() {
   const [isSpeechEnabled, setIsSpeechEnabled] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const hungarianVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      const updateVoices = () => {
+        const voices = window.speechSynthesis.getVoices();
+        const hungarianVoice = voices.find(v => v.lang.includes("hu"));
+        if (hungarianVoice) {
+          hungarianVoiceRef.current = hungarianVoice;
+        }
+      };
+
+      updateVoices();
+      window.speechSynthesis.addEventListener("voiceschanged", updateVoices);
+      return () => {
+        window.speechSynthesis.removeEventListener("voiceschanged", updateVoices);
+      };
+    }
+  }, []);
 
   const speak = (text: string) => {
     if (!isSpeechEnabled || !window.speechSynthesis) return;
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "hu-HU";
-    const voices = window.speechSynthesis.getVoices();
-    const hungarianVoice = voices.find(v => v.lang.includes("hu"));
-    if (hungarianVoice) utterance.voice = hungarianVoice;
+
+    // Use cached voice if available, otherwise fallback to getVoices()
+    if (hungarianVoiceRef.current) {
+      utterance.voice = hungarianVoiceRef.current;
+    } else {
+      const voices = window.speechSynthesis.getVoices();
+      const hungarianVoice = voices.find(v => v.lang.includes("hu"));
+      if (hungarianVoice) {
+        utterance.voice = hungarianVoice;
+        hungarianVoiceRef.current = hungarianVoice;
+      }
+    }
+
     window.speechSynthesis.speak(utterance);
   };
 
