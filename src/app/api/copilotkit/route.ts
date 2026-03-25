@@ -87,7 +87,7 @@ export async function POST(req: Request) {
     // Visszaküldjük a hiba részleteit a frontendnek, hogy lássuk mi a baj
     return new Response(JSON.stringify({ 
       error: "OpenAI API Error", 
-      details: error.message 
+      details: "Internal Server Error"
     }), { status: 500 });
   }
 }

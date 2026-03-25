@@ -87,7 +87,7 @@ export default function ChatInterface() {
       console.error("Hiba:", error);
       setMessages(prev => [
         ...prev, 
-        { role: "assistant", content: `⚠️ Hiba történt: ${error.message}` }
+        { role: "assistant", content: "⚠️ Sajnáljuk, hiba történt a kérés feldolgozása közben." }
       ]);
     } finally {
       setIsLoading(false);
