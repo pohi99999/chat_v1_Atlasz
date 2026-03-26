@@ -7,5 +7,7 @@
     "Knowledge Base",
     "Web Search"
   ],
-  "voice": "nova"
+  "voice": "nova",
+  "accentColor": "#2563eb",
+  "greeting": "Szia! Én vagyok a személyes AI asszisztensed. Képes vagyok tanulni a dokumentumaidból és a beszélgetéseinkből is. Miben segíthetek ma?"
 }

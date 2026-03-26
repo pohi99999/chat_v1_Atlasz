@@ -2,7 +2,7 @@ import OpenAI from 'openai';
 import { NextResponse } from 'next/server';
 import { db } from '../../../lib/db.js';
 import { getEmbedding } from '../../../lib/embeddings.js';
-import { config } from '../../../lib/config.js';
+import { config, getSystemPrompt } from '../../../lib/config.js';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -80,14 +80,12 @@ export async function POST(req: Request) {
     }
 
     // 5. Állítsuk össze a System Prompt-ot a config-ból
+    const personalityPrompt = await getSystemPrompt();
     const SYSTEM_PROMPT = `Te vagy ${config.name}, a(z) ${config.company} dedikált asszisztense.
 Szlogened: "${config.slogan}"
 Fő képességeid: ${config.capabilities.join(', ')}
 
-### STÍLUS ÉS SZEMÉLYISÉG
-- Hangnem: Professzionális, segítőkész, de lényegretörő és barátságos.
-- Válaszadás: Magyar nyelven kommunikálj. A válaszaid legyenek könnyen felolvashatóak (mivel hangalapon is meg fognak szólalni). Ne használj túl sok Markdown formázást, kódot, táblázatot vagy hosszú URL-eket, ha nem feltétlenül muszáj, mert a hanggenerátor nem tudja szépen felolvasni.
-- RAG (Tudásbázis) használata: Az alábbiakban megkapod a cég vagy a projekt helyi tudásbázisának legrelevánsabb részleteit és a korábbi tényeket. HA a válasz megtalálható a kontextusban, mindenképpen arra alapozd a válaszod! Ha nincs benne, hagyatkozz a saját általános tudásodra, de jelezd, ha valamiben nem vagy biztos.
+${personalityPrompt}
 ${contextText}
 `;
 
