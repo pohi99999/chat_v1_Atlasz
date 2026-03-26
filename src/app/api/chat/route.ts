@@ -14,6 +14,7 @@ async function extractAndSaveFact(
   message: string,
   source: 'user-extraction' | 'assistant-extraction' = 'user-extraction'
 ) {
+  if (!message.trim()) return;
   try {
     const extractionResponse = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
