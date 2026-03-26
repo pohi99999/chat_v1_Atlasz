@@ -16,5 +16,9 @@ export const config: AssistantProfile = profile;
 
 export async function getSystemPrompt(): Promise<string> {
   const filePath = path.join(process.cwd(), 'src', 'config', 'system-prompt.md');
-  return fs.readFile(filePath, 'utf-8');
+  try {
+    return await fs.readFile(filePath, 'utf-8');
+  } catch {
+    return '';
+  }
 }
