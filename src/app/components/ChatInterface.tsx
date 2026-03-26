@@ -43,6 +43,30 @@ export default function ChatInterface() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  useEffect(() => {
+    const loadMemories = async () => {
+      try {
+        const res = await fetch('/api/memories');
+        if (!res.ok) return;
+        const data = await res.json() as { memories: Array<{ text: string }> };
+        if (data.memories && data.memories.length > 0) {
+          const factList = data.memories
+            .slice(0, 5)
+            .map((m) => `– ${m.text}`)
+            .join('\n');
+          setMessages([{
+            role: 'assistant',
+            content: `Visszatértél! Ezeket tudom rólad:\n${factList}\n\nMiben segíthetek ma?`
+          }]);
+        }
+      } catch {
+        // Ha a betöltés sikertelen, az alapértelmezett greeting marad
+      }
+    };
+
+    void loadMemories();
+  }, []); // Csak egyszer fut, az oldal betöltésekor
+
   const speakNova = async (text: string) => {
     if (!isSpeechEnabled) return;
     
