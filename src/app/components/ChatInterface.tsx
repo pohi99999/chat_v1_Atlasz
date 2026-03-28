@@ -5,7 +5,8 @@ import ReactMarkdown from "react-markdown";
 import profile from '../../config/profile.json';
 
 interface Message {
-  role: string;
+  id: string;
+  role: "user" | "assistant" | "system";
   content: string;
   time?: string;
 }
@@ -36,9 +37,41 @@ function now(): string {
   return new Date().toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' });
 }
 
+interface FileUploadButtonProps {
+  mobile: boolean;
+  uploading: boolean;
+  onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}
+
+function FileUploadButton({ mobile, uploading, onUpload }: FileUploadButtonProps) {
+  return (
+    <label
+      className={`cursor-pointer p-2 rounded-full transition-colors relative ${
+        mobile ? 'hover:bg-white/20' : 'hover:bg-slate-100'
+      }`}
+      title="Tudásbázis bővítése (PDF/TXT/MD/CSV)"
+    >
+      <span className="text-lg">📎</span>
+      <input
+        type="file"
+        className="hidden"
+        accept=".txt,.pdf,.md,.csv"
+        onChange={onUpload}
+        disabled={uploading}
+      />
+      {uploading && (
+        <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+        </span>
+      )}
+    </label>
+  );
+}
+
 export default function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([
-    { role: "assistant", content: profile.greeting, time: now() }
+    { id: crypto.randomUUID(), role: "assistant", content: profile.greeting, time: now() }
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -72,6 +105,7 @@ export default function ChatInterface() {
             .map((m) => `– ${m.text}`)
             .join('\n');
           setMessages([{
+            id: crypto.randomUUID(),
             role: 'assistant',
             content: `Visszatértél! Ezeket tudom rólad:\n${factList}\n\nMiben segíthetek ma?`,
             time: now()
@@ -95,7 +129,9 @@ export default function ChatInterface() {
       if (!response.ok) throw new Error('Audio generation failed');
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
-      new Audio(url).play();
+      const audio = new Audio(url);
+      audio.addEventListener('ended', () => URL.revokeObjectURL(url), { once: true });
+      audio.play();
     } catch (err) {
       console.error('Nova TTS Error:', err);
     }
@@ -129,9 +165,10 @@ export default function ChatInterface() {
     formData.append('file', file);
     try {
       const res = await fetch('/api/ingest', { method: 'POST', body: formData });
-      const data = await res.json();
+      const data = await res.json() as { error?: string };
       if (res.ok) {
         setMessages(prev => [...prev, {
+          id: crypto.randomUUID(),
           role: "assistant",
           content: `📁 Fájl feldolgozva: **${file.name}**. Már tudok válaszolni a benne lévő adatokra!`,
           time: now()
@@ -153,7 +190,7 @@ export default function ChatInterface() {
 
     const userMessage = input.trim();
     setInput("");
-    const newMessages: Message[] = [...messages, { role: "user", content: userMessage, time: now() }];
+    const newMessages: Message[] = [...messages, { id: crypto.randomUUID(), role: "user", content: userMessage, time: now() }];
     setMessages(newMessages);
     setIsLoading(true);
 
@@ -166,11 +203,12 @@ export default function ChatInterface() {
         body: JSON.stringify({ messages: apiMessages }),
       });
       if (!res.ok) throw new Error("API hiba");
-      const data = await res.json();
-      setMessages(prev => [...prev, { role: "assistant", content: data.reply, time: now() }]);
+      const data = await res.json() as { reply: string };
+      setMessages(prev => [...prev, { id: crypto.randomUUID(), role: "assistant", content: data.reply, time: now() }]);
       void speakNova(data.reply);
     } catch {
       setMessages(prev => [...prev, {
+        id: crypto.randomUUID(),
         role: "assistant",
         content: "Sajnálom, hiba történt a válaszadás közben.",
         time: now()
@@ -186,30 +224,6 @@ export default function ChatInterface() {
       void handleSubmit();
     }
   };
-
-  const FileUploadButton = ({ mobile }: { mobile: boolean }) => (
-    <label
-      className={`cursor-pointer p-2 rounded-full transition-colors relative ${
-        mobile ? 'hover:bg-white/20' : 'hover:bg-slate-100'
-      }`}
-      title="Tudásbázis bővítése (PDF/TXT/MD/CSV)"
-    >
-      <span className="text-lg">📎</span>
-      <input
-        type="file"
-        className="hidden"
-        accept=".txt,.pdf,.md,.csv"
-        onChange={handleFileUpload}
-        disabled={uploading}
-      />
-      {uploading && (
-        <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
-        </span>
-      )}
-    </label>
-  );
 
   return (
     <div className="flex flex-col h-full bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -234,11 +248,12 @@ export default function ChatInterface() {
           </div>
         </div>
         <div className="flex gap-1 items-center">
-          <FileUploadButton mobile={true} />
+          <FileUploadButton mobile={true} uploading={uploading} onUpload={handleFileUpload} />
           <button
             onClick={() => setIsSpeechEnabled(!isSpeechEnabled)}
             className={`p-2 rounded-full hover:bg-white/20 transition-colors ${isSpeechEnabled ? 'text-green-300' : 'text-white/60'}`}
             title="Nova hang be/ki"
+            aria-label={isSpeechEnabled ? "Hang kikapcsolása" : "Hang bekapcsolása"}
           >
             {isSpeechEnabled ? "🔊" : "🔇"}
           </button>
@@ -263,12 +278,13 @@ export default function ChatInterface() {
           </div>
         </div>
         <div className="flex gap-1 items-center">
-          <FileUploadButton mobile={false} />
+          <FileUploadButton mobile={false} uploading={uploading} onUpload={handleFileUpload} />
           <button
             onClick={() => setIsSpeechEnabled(!isSpeechEnabled)}
             className={`p-2 rounded-full hover:bg-slate-100 transition-colors ${isSpeechEnabled ? '' : 'opacity-40'}`}
             style={isSpeechEnabled ? { color: profile.accentColor } : {}}
             title="Nova hang be/ki"
+            aria-label={isSpeechEnabled ? "Hang kikapcsolása" : "Hang bekapcsolása"}
           >
             {isSpeechEnabled ? "🔊" : "🔇"}
           </button>
@@ -277,9 +293,9 @@ export default function ChatInterface() {
 
       {/* Üzenetek */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
-        {messages.map((msg, index) => (
+        {messages.map((msg) => (
           <div
-            key={index}
+            key={msg.id}
             className={`flex animate-fadeInUp ${msg.role === "user" ? "justify-end" : "justify-start"}`}
           >
             <div className={`max-w-[80%] flex flex-col gap-1 ${msg.role === "user" ? "items-end" : "items-start"}`}>
@@ -333,6 +349,7 @@ export default function ChatInterface() {
         <div className="flex items-end gap-2">
           <button
             type="button"
+            aria-label={isListening ? "Diktálás leállítása" : "Diktálás indítása"}
             onClick={startListening}
             className={`p-3 rounded-full transition-all shrink-0 ${
               isListening
@@ -355,13 +372,14 @@ export default function ChatInterface() {
             disabled={isLoading}
           />
           <button
+            aria-label="Üzenet küldése"
             onClick={() => void handleSubmit()}
             disabled={!input.trim() || isLoading}
             className="p-3 rounded-full text-white transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ backgroundColor: profile.accentColor }}
             title="Küldés"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5" aria-hidden="true">
               <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
             </svg>
           </button>
