@@ -45,36 +45,36 @@ async function extractAndSaveFact(
       await db.saveMemories();
     }
   } catch (error: unknown) {
-    console.error('Hiba a ténykinyerés során:', error);
+    void error; // Ténykinyerés hiba nem blokkolja a chat választ
   }
 }
 
 export async function POST(req: Request) {
   try {
     const { messages } = await req.json();
-    
+
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return NextResponse.json({ error: 'Nincsenek üzenetek megadva' }, { status: 400 });
     }
 
     const lastMessage = messages[messages.length - 1].content;
 
-    // 1. Inicializáljuk a lokális DB-t
+    // 1. DB init
     await db.init();
 
-    // 2. Szerezzük meg az utolsó üzenet vektorát (RAG query)
+    // 2. Embedding a RAG query-hez
     const queryEmbedding = await getEmbedding(lastMessage);
 
-    // 3. Keressük meg a top 3 dokumentumot és top 3 tényt
+    // 3. Top 3 dokumentum + top 3 memória
     const relevantDocs = db.search(queryEmbedding, 'documents', 3);
     const relevantFacts = db.search(queryEmbedding, 'memories', 3);
 
-    // 4. Állítsuk össze a RAG kontextust
+    // 4. RAG kontextus összeállítása
     let contextText = '';
 
     if (relevantDocs.length > 0) {
       contextText += '\n\n### RELEVÁNS DOKUMENTUMOK A TUDÁSBÁZISBÓL:\n';
-      contextText += relevantDocs.map(d => `- [${d.metadata?.source || 'ismeretlen'}]: ${d.text}`).join('\n\n');
+      contextText += relevantDocs.map(d => `- [${typeof d.metadata?.['source'] === 'string' ? d.metadata['source'] : 'ismeretlen'}]: ${d.text}`).join('\n\n');
     }
 
     if (relevantFacts.length > 0) {
@@ -82,7 +82,7 @@ export async function POST(req: Request) {
       contextText += relevantFacts.map(f => `- ${f.text}`).join('\n');
     }
 
-    // 4b. Web keresés: alacsony RAG relevancia VAGY időérzékeny kérdés esetén
+    // 4b. Web keresés döntés
     const maxRagScore = relevantDocs[0]?.score ?? 0;
     if (await shouldSearchWeb(lastMessage, maxRagScore)) {
       const webResults = await searchWeb(lastMessage);
@@ -91,7 +91,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // 5. Állítsuk össze a System Prompt-ot a config-ból
+    // 5. System prompt összeállítás
     const personalityPrompt = await getSystemPrompt();
     const SYSTEM_PROMPT = `Te vagy ${config.name}, a(z) ${config.company} dedikált asszisztense.
 Szlogened: "${config.slogan}"
@@ -101,29 +101,46 @@ ${personalityPrompt}
 ${contextText}
 `;
 
-    // 6. OpenAI Válaszgenerálás (előbb kell, hogy az AI választ is feldolgozhassuk)
-    const response = await openai.chat.completions.create({
+    // 6. OpenAI streaming
+    const openaiStream = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         ...messages
       ],
-      stream: false,
+      stream: true,
     });
 
-    const reply = response.choices[0].message.content ?? '';
+    let fullReply = '';
 
-    // 7. Párhuzamos ténykinyerés – háttérben fut, nem blokkolja a választ
-    void Promise.all([
-      extractAndSaveFact(lastMessage, 'user-extraction'),
-      extractAndSaveFact(reply, 'assistant-extraction'),
-    ]);
+    const readableStream = new ReadableStream({
+      async start(controller) {
+        const encoder = new TextEncoder();
+        try {
+          for await (const chunk of openaiStream) {
+            const text = chunk.choices[0]?.delta?.content ?? '';
+            if (text) {
+              fullReply += text;
+              controller.enqueue(encoder.encode(text));
+            }
+          }
+        } finally {
+          // 7. Háttér ténykinyerés – a teljes válasz rendelkezésre áll
+          void Promise.all([
+            extractAndSaveFact(lastMessage, 'user-extraction'),
+            extractAndSaveFact(fullReply, 'assistant-extraction'),
+          ]);
+          controller.close();
+        }
+      }
+    });
 
-    return NextResponse.json({ reply });
+    return new Response(readableStream, {
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    });
 
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Szerver hiba';
-    console.error('Chat API Hiba:', error);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
