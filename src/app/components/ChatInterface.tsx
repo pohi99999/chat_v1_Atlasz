@@ -69,6 +69,104 @@ function FileUploadButton({ mobile, uploading, onUpload }: FileUploadButtonProps
   );
 }
 
+interface MemoryItem {
+  id: string;
+  text: string;
+  source: string;
+  createdAt: string;
+}
+
+interface MemoryModalProps {
+  onClose: () => void;
+}
+
+function MemoryModal({ onClose }: MemoryModalProps) {
+  const [memories, setMemories] = useState<MemoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch('/api/memories');
+        if (!res.ok) return;
+        const data = await res.json() as { memories: MemoryItem[] };
+        setMemories(data.memories);
+      } finally {
+        setLoading(false);
+      }
+    };
+    void load();
+  }, []);
+
+  const handleDelete = async (id: string) => {
+    setMemories(prev => prev.filter(m => m.id !== id));
+    await fetch(`/api/memories/${id}`, { method: 'DELETE' });
+  };
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-base font-semibold text-slate-900">Megjegyzett tények</h2>
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-full hover:bg-slate-100"
+            aria-label="Bezárás"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+              <path fillRule="evenodd" d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+
+        {loading && (
+          <p className="text-sm text-slate-400 text-center py-4">Betöltés...</p>
+        )}
+
+        {!loading && memories.length === 0 && (
+          <p className="text-sm text-slate-400 text-center py-4">Még nincs megjegyzett tény.</p>
+        )}
+
+        {!loading && memories.length > 0 && (
+          <ul className="space-y-2 max-h-80 overflow-y-auto">
+            {memories.map((m) => (
+              <li key={m.id} className="flex items-start gap-2 p-2 rounded-xl hover:bg-slate-50 group">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-slate-800 leading-snug">{m.text}</p>
+                  <span
+                    className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full font-medium ${
+                      m.source === 'user-extraction'
+                        ? 'bg-blue-50 text-blue-600'
+                        : 'bg-purple-50 text-purple-600'
+                    }`}
+                  >
+                    {m.source === 'user-extraction' ? 'Te mondtad' : 'AI kinyerte'}
+                  </span>
+                </div>
+                <button
+                  onClick={() => void handleDelete(m.id)}
+                  className="shrink-0 text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 p-1 rounded"
+                  aria-label="Tény törlése"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                    <path fillRule="evenodd" d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([
     { id: crypto.randomUUID(), role: "assistant", content: profile.greeting, time: now() }
@@ -78,6 +176,7 @@ export default function ChatInterface() {
   const [isSpeechEnabled, setIsSpeechEnabled] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [isMemoryOpen, setIsMemoryOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -253,6 +352,14 @@ export default function ChatInterface() {
           </div>
         </div>
         <div className="flex gap-1 items-center">
+          <button
+            onClick={() => setIsMemoryOpen(true)}
+            className="p-2 rounded-full hover:bg-white/20 transition-colors text-white/80"
+            title="Megjegyzett tények"
+            aria-label="Megjegyzett tények megnyitása"
+          >
+            🧠
+          </button>
           <FileUploadButton mobile={true} uploading={uploading} onUpload={handleFileUpload} />
           <button
             onClick={() => setIsSpeechEnabled(!isSpeechEnabled)}
@@ -283,6 +390,14 @@ export default function ChatInterface() {
           </div>
         </div>
         <div className="flex gap-1 items-center">
+          <button
+            onClick={() => setIsMemoryOpen(true)}
+            className="p-2 rounded-full hover:bg-slate-100 transition-colors text-slate-500"
+            title="Megjegyzett tények"
+            aria-label="Megjegyzett tények megnyitása"
+          >
+            🧠
+          </button>
           <FileUploadButton mobile={false} uploading={uploading} onUpload={handleFileUpload} />
           <button
             onClick={() => setIsSpeechEnabled(!isSpeechEnabled)}
@@ -392,6 +507,9 @@ export default function ChatInterface() {
         <p className="text-xs text-slate-300 text-center mt-2">Enter = küldés · Shift+Enter = új sor</p>
       </div>
 
+      {isMemoryOpen && (
+        <MemoryModal onClose={() => setIsMemoryOpen(false)} />
+      )}
     </div>
   );
 }
