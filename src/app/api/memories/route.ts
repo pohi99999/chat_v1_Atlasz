@@ -5,6 +5,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export interface MemorySummary {
+  id: string;
   text: string;
   source: string;
   createdAt: string;
@@ -15,6 +16,7 @@ export async function GET() {
     await db.init();
 
     const memories: MemorySummary[] = db.memories.map((m) => ({
+      id: m.id,
       text: m.text,
       source: (m.metadata?.['source'] as string) ?? 'unknown',
       createdAt: (m.metadata?.['createdAt'] as string) ?? '',
