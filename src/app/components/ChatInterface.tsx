@@ -51,18 +51,35 @@ function now(): string {
 
 function KnowledgeModal({ onClose }: { onClose: () => void }) {
   const [docs, setDocs] = useState<DocumentInfo[]>([]);
+  const [totalChunks, setTotalChunks] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
 
   const load = async () => {
+    setLoading(true);
     try {
-      const res = await fetch('/api/memories'); // Átmenetileg a memories végpontot használjuk a források listázásához
-      // A valódi implementációhoz kellene egy /api/documents végpont, de most megoldjuk a meglévővel
-      const resMem = await fetch('/api/memories');
-      const data = await resMem.json();
-      // Itt egy egyszerűsített listázás: egyedi források kigyűjtése
-      setLoading(false);
+      const res = await fetch('/api/documents');
+      const data = await res.json();
+      if (data.documents) {
+        setDocs(data.documents);
+        setTotalChunks(data.totalChunks ?? 0);
+      }
     } catch {
+      // csendes hiba
+    } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    if (!confirm('Biztosan törlöd az összes feltöltött dokumentumot?')) return;
+    setDeleting(true);
+    try {
+      await fetch('/api/documents', { method: 'DELETE' });
+      setDocs([]);
+      setTotalChunks(0);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -71,17 +88,42 @@ function KnowledgeModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6" onClick={(e) => e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-bold text-slate-900">📚 Tudásbázis Kezelő</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">✕</button>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl leading-none">✕</button>
         </div>
-        <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
-          <p className="text-sm text-slate-500 mb-4">Itt láthatod a feltöltött dokumentumokat és a rendszerbe épített tudást.</p>
-          <div className="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
-             <p className="text-sm text-slate-400">A dokumentum-szintű törlés fejlesztés alatt áll.<br/>Jelenleg a teljes adatbázis törlésével távolíthatóak el.</p>
-          </div>
+        <p className="text-xs text-slate-400 mb-4">{totalChunks} szövegrészlet indexelve</p>
+        <div className="space-y-2 max-h-72 overflow-y-auto pr-1 custom-scrollbar">
+          {loading ? (
+            <p className="text-sm text-slate-400 text-center py-8">Betöltés...</p>
+          ) : docs.length === 0 ? (
+            <div className="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+              <p className="text-sm text-slate-400">Még nincs feltöltött dokumentum.<br/>Használd a 📎 gombot fájl hozzáadásához.</p>
+            </div>
+          ) : (
+            docs.map((doc) => (
+              <div key={doc.source} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                <div>
+                  <p className="text-sm font-medium text-slate-700 truncate max-w-[280px]">{doc.source}</p>
+                  <p className="text-xs text-slate-400">{doc.count} részlet · {doc.lastAdded ? new Date(doc.lastAdded).toLocaleDateString('hu-HU') : ''}</p>
+                </div>
+                <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">{doc.count}</span>
+              </div>
+            ))
+          )}
         </div>
-        <button onClick={onClose} className="w-full mt-6 py-3 bg-blue-600 text-white rounded-xl font-medium">Bezárás</button>
+        <div className="flex gap-3 mt-6">
+          {docs.length > 0 && (
+            <button
+              onClick={handleDeleteAll}
+              disabled={deleting}
+              className="flex-1 py-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-medium text-sm transition-colors disabled:opacity-50"
+            >
+              {deleting ? 'Törlés...' : 'Összes törlése'}
+            </button>
+          )}
+          <button onClick={onClose} className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-medium text-sm">Bezárás</button>
+        </div>
       </div>
     </div>
   );
@@ -260,6 +302,7 @@ export default function ChatInterface() {
       const title = messages.length <= 1 ? userMessage.slice(0, 30) + "..." : undefined;
       await fetch('/api/threads', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: currentThreadId,
           title: title || threads.find(t => t.id === currentThreadId)?.title || "Beszélgetés",
